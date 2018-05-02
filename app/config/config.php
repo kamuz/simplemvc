@@ -11,4 +11,6 @@ define('APPROOT', dirname(dirname(__FILE__)));
 // URL Root
 define('URLROOT', 'http://simplemvc.loc');
 // Site Name
-define('SITENAME', 'Share Posts');
+define('SITENAME', 'Simple MVC');
+// App Version
+define('APPVERSION', '1.0.0');
