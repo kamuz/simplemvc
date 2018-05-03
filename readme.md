@@ -111,29 +111,31 @@ define('APPVERSION', '1.0.0');
 
 ```php
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
-    <a class="navbar-brand" href="<?php echo URLROOT; ?>"><?php echo SITENAME; ?></a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
+    <div class="container">
+        <a class="navbar-brand" href="<?php echo URLROOT; ?>"><?php echo SITENAME; ?></a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-    <div class="collapse navbar-collapse" id="navbarsExampleDefault">
-        <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-                <a class="nav-link" href="<?php echo URLROOT; ?>">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="<?php echo URLROOT; ?>/pages/about">About</a>
-            </li>
-        </ul>
-        
-        <ul class="navbar-nav ml-auto">
-            <li class="nav-item active">
-                <a class="nav-link" href="<?php echo URLROOT; ?>/users/register">Register</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="<?php echo URLROOT; ?>/users/login">Login</a>
-            </li>
-        </ul>
+        <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo URLROOT; ?>">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo URLROOT; ?>/pages/about">About</a>
+                </li>
+            </ul>
+            
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo URLROOT; ?>/users/register">Register</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo URLROOT; ?>/users/login">Login</a>
+                </li>
+            </ul>
+        </div>
     </div>
 </nav>
 ```
@@ -178,5 +180,200 @@ define('APPVERSION', '1.0.0');
         <p class="lead"><?php echo $data['description']; ?></p>
         </div>
     </div> 
+<?php require APPROOT . '/views/inc/footer.php'; ?>
+```
+
+## Создание контроллера Users
+
+Создадим контроллер, в котором мы пока что просто проверим, если данные не отправляются методом POST, тогда просто выводим форму (пока что просто сообщение).
+
+*app/controllers/Users.php*
+
+```php
+<?php
+
+class Users extends Controller{
+    public function __construct(){
+
+    }
+
+    public function index(){
+        echo 'User index';
+    }
+
+    public function register(){
+        // Check for POST
+        if($_SERVER['REQUEST_METHOD'] == 'POST'){
+            // Process the form
+        }
+        else{
+            // Load form
+            echo 'User register form';
+        }
+    }
+}
+```
+
+По клику на ссылку регистрации в меню мы должны обращатся к нашему контроллеру и методу `register()`. Теперь давайте инициализируем данные и подгрузим вид:
+
+*app/controllers/Users.php*
+
+```php
+<?php
+
+class Users extends Controller{
+    public function __construct(){
+
+    }
+
+    public function index(){
+        echo 'User index';
+    }
+
+    public function register(){
+        // Check for POST
+        if($_SERVER['REQUEST_METHOD'] == 'POST'){
+            // Process the form
+        }
+        else{
+            // Load form
+            $data = [
+                'name' => '',
+                'email' => '',
+                'password' => '',
+                'confirm_password' => '',
+                'name_err' => '',
+                'email_err' => '',
+                'password_err' => '',
+                'confirm_password_err' => ''
+            ];
+            $this->view('users/register', $data);
+        }
+    }
+}
+```
+
+Создадим вид:
+
+*app/views/users/register.php*
+
+```php
+<?php require APPROOT . '/views/inc/header.php'; ?>
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card card-body bg-light mt-5">
+                <h2>Create An Account</h2>
+            </div>
+        </div>
+    </div>
+<?php require APPROOT . '/views/inc/footer.php'; ?>
+```
+
+## Виды для формы регистрации и авторизации
+
+По сути это просто разметка Bootstrap и единственное, что здесь может вызвать вопросы это конструкция `<?php echo !empty($data['name_err']) ? 'is-invalid' : ''; ?>`, где мы с помощью тернарного оператора присваиваем класс `is-invalid` для инпута, когда в массив попадает значение с ошибкой. С валидацией формы мы поработаем чуть позже и всё станей яснее:
+
+*app/views/users/register.php*
+
+```php
+<?php require APPROOT . '/views/inc/header.php'; ?>
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card card-body bg-light mt-5">
+                <h2>Create An Account</h2>
+                <p>Please fill out this form to register with us</p>
+                <form action="<?php echo URLROOT; ?>/users/register" method="POST">
+                    <div class="form-group">
+                        <label for="name">Name: <sup>*</sup></label>
+                        <input type="text" name="name" class="form-control form-control-lg <?php echo !empty($data['name_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['name'] ?>">
+                        <span class="invalid-feedback"><?php echo data['name_err'] ?></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email: <sup>*</sup></label>
+                        <input type="text" name="email" class="form-control form-control-lg <?php echo !empty($data['email_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['email'] ?>">
+                        <span class="invalid-feedback"><?php echo data['email_err'] ?></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password: <sup>*</sup></label>
+                        <input type="text" name="password" class="form-control form-control-lg <?php echo !empty($data['password_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['password'] ?>">
+                        <span class="invalid-feedback"><?php echo data['password_err'] ?></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm Password: <sup>*</sup></label>
+                        <input type="text" name="confirm_password" class="form-control form-control-lg <?php echo !empty($data['confirm_password_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['confirm_password'] ?>">
+                        <span class="invalid-feedback"><?php echo data['confirm_password_err'] ?></span>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <input type="submit" value="Register" class="btn btn-success btn-block">
+                        </div>
+                        <div class="col">
+                            <a href="<?php echo URLROOT ?>/users/login" class="btn btn-light btn-block">Have an account? Login</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+<?php require APPROOT . '/views/inc/footer.php'; ?>
+```
+
+Добавим метод `login()` в контроллер `User`:
+
+*app/controllers/Users.php*
+
+```php
+public function login(){
+    // Check for POST
+    if($_SERVER['REQUEST_METHOD'] == 'POST'){
+        // Process the form
+    }
+    else{
+        // Load form
+        $data = [
+            'email' => '',
+            'password' => '',
+            'email_err' => '',
+            'password_err' => '',
+        ];
+        $this->view('users/login', $data);
+    }
+}
+```
+
+Вид, очень поход на предыдущий - мы просто убрали лишнее:
+
+*app/views/users/login.php*
+
+```php
+<?php require APPROOT . '/views/inc/header.php'; ?>
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card card-body bg-light mt-5">
+                <h2>Login</h2>
+                <p>Please fill in your credentials to log in</p>
+                <form action="<?php echo URLROOT; ?>/users/register" method="POST">
+                    <div class="form-group">
+                        <label for="email">Email: <sup>*</sup></label>
+                        <input type="text" name="email" class="form-control form-control-lg <?php echo !empty($data['email_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['email'] ?>">
+                        <span class="invalid-feedback"><?php echo data['email_err'] ?></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password: <sup>*</sup></label>
+                        <input type="text" name="password" class="form-control form-control-lg <?php echo !empty($data['password_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['password'] ?>">
+                        <span class="invalid-feedback"><?php echo data['password_err'] ?></span>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <input type="submit" value="Login" class="btn btn-success btn-block">
+                        </div>
+                        <div class="col">
+                            <a href="<?php echo URLROOT ?>/users/register" class="btn btn-light btn-block">No account? Register</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 <?php require APPROOT . '/views/inc/footer.php'; ?>
 ```
