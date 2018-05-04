@@ -10,7 +10,7 @@ CREATE TABLE `posts` (
   `user_id` int(11) DEFAULT NULL,
   `title` varchar(255) DEFAULT NULL,
   `body` text,
-  `create_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `create_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -19,7 +19,7 @@ CREATE TABLE `users` (
   `name` varchar(255) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
   `password` varchar(255) DEFAULT NULL,
-  `create_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `create_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
@@ -558,5 +558,82 @@ if(empty($data['email'])){
 }
 else if($this->userModel->findUserByEmail($data['email'])){
     $data['email_err'] = 'Email is already taken';
+}
+```
+
+## Регистрация пользователя
+
+Перед тем как двигаться дальше, давайте вначале захешируем наш пароль, а затем в случае успешной записи в БД  сделаем редирект на страницу логина с помощью собственной функции, которую мы определим в хелпере.
+
+*app/controllers/Users.php*
+
+```php
+    // Validated
+
+    // Hash Password
+    $data['password'] = password_hash($data['passworld'], PASSWORD_DEFAULT);
+
+    // Register users
+    if($this->userModel->register($data)){
+        redirect('/users/login');
+    }
+    else{
+        die('Something went wrong');
+    }
+}
+```
+
+За запись пользователя в БД отвечает метод `register()`, которую нам нужно определить в нашей модели:
+
+*app/models/User.php*
+
+```php
+// Register user
+public function register($data){
+    $this->db->query('INSERT INTO users (name, email, password) VALUES(:name, :email, :password)');
+    $this->db->bind(':name', $data['name']);
+    $this->db->bind(':email', $data['email']);
+    $this->db->bind(':password', $data['password']);
+
+    if($this->db->execute()){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+```
+
+Здесь мы просто добавляем запись в базу данных и если запись успешно добавилась в БД, то мы возвращаем `true`, а если произошли какие-то сбои или ошибки, тогда `false`.
+
+В файле будстрапа добавим вызов нашего хелпера:
+
+*app/bootstrap.php*
+
+```php
+<?php
+
+// Load Config
+require_once "config/config.php";
+
+// Load Helpers
+require_once 'helpers/url_helper.php';
+
+// Autoload Core Libraries
+spl_autoload_register(function($className){
+    require_once 'libraries/' . $className . '.php';
+});
+```
+
+В хелпере мы создадим собственную функцию `redirect()`, которая будет использовать функцию `header()` чтобы сделать редирект:
+
+*app/helpers/url_helper.php*
+
+```php
+<?php
+
+// Simple page redirect
+function redirect($page){
+    header('location: ' . URLROOT . $page);
 }
 ```
