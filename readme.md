@@ -504,3 +504,59 @@ class Users extends Controller{
     }
 }
 ```
+
+## Модель User и проверка email
+
+Во время регистрации нам нужно проверять не существует ли уже пользователь с указанным email. Чтобы это проверть нам нужно создать предварительно тестовые данные:
+
+```sql
+INSERT INTO `users` VALUES ('1', 'Jonh Doe', 'j.doe@gmail.com', '123456', '2018-05-04 12:16:35');
+INSERT INTO `users` VALUES ('2', 'Vladimir Kamuz', 'v.kamuz@gmail.com', '123456', '2018-05-04 12:16:30');
+```
+
+Тепер создадим модель `User`:
+
+*app/models/User.php*
+
+```php
+<?php
+
+class User{
+    private $db;
+
+    public function __construct(){
+        $this->db = new Database;
+    }
+
+    // Find user by email
+    public function findUserByEmail($email){
+        $this->db->query('SELECT email FROM users WHERE email = :email');
+        $this->db->bind(':email', $email);
+
+        $row = $this->db->single();
+
+        // Check row
+        if($this->db->rowCount() > 0){
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+}
+```
+
+Здесь мы описываем функцию `findUserByEmail()` в котором проверим переданный email с тем если такой же в БД и если такой email уже имеется в БД, то есть мы находим совпадение в БД, то мы создадим новое сообщение об ошибке валидации:
+
+*app/controllers/Users.php*
+
+```php
+//..
+// Validate Email
+if(empty($data['email'])){
+    $data['email_err'] = 'Please enter email';
+}
+else if($this->userModel->findUserByEmail($data['email'])){
+    $data['email_err'] = 'Email is already taken';
+}
+```
