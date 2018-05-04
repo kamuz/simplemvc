@@ -637,3 +637,69 @@ function redirect($page){
     header('location: ' . URLROOT . $page);
 }
 ```
+
+## Хелпер для флеш сообщений
+
+Нам нужно создать функцию, которая будет при первом вызове в контроллере записывать данные в сессию, а при повторном вызове в виде, при условии что передан только первый параметр выводить флеш сообщение и удалять сессионные переменные, чтобы при повторном загрузке этой же страницы сообщение у нас уже не отображалось:
+
+*app/helpers/session_helper.php*
+
+```php
+<?php
+
+// $_SESSION['user'] = 'Brad';
+session_start();
+
+// Flash message helper
+// EXAMPLE - flash('register_success', 'You are now register', 'alert alert-danger');
+// DISPLAY IN VIEW - echo flash('register_success')
+function flash($name='', $message='', $class='alert alert-success'){
+    if(!empty($name)){
+        // Execute on the Controller
+        if(!empty($message) && empty($_SESSION[$name])){
+            $_SESSION[$name] = $message;
+            $_SESSION[$name . '_class'] = $class;
+        }
+        // Execute on the View
+        else if(empty($message) && !empty($_SESSION[$name])){
+            echo '<div class="' . $_SESSION[$name . '_class'] . '">' . $_SESSION[$name] . '</div>';
+            unset($_SESSION[$name]);
+            unset($_SESSION[$name . '_class']);
+        }
+    }
+}
+```
+
+
+Не забываем подключить этой хелпер в файле бутстрапа:
+
+*app/bootstrap.php*
+
+```php
+// Load Helpers
+require_once 'helpers/url_helper.php';
+require_once 'helpers/session_helper.php';
+```
+
+Теперь мы в контроллере вызываем этот метод с двумя или тремя (если хотим изменить стиль алерта) параметрами после записи в БД:
+
+*app/controllers/Users.php*
+
+```php
+// Register users
+if($this->userModel->register($data)){
+    flash('register_success', 'You are registered and can log in');
+    redirect('/users/login');
+}
+```
+
+А в виде, куда мы редиректим пользователя, только с первым - это по сути ID сессионной переменной.
+
+*app/views/users/login.php*
+
+```php
+<div class="card card-body bg-light mt-5">
+    <?php flash('register_success') ?>
+    <h2>Login</h2>
+    <p>Please fill in your credentials to log in</p>
+```
