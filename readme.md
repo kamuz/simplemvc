@@ -286,22 +286,22 @@ class Users extends Controller{
                     <div class="form-group">
                         <label for="name">Name: <sup>*</sup></label>
                         <input type="text" name="name" class="form-control form-control-lg <?php echo !empty($data['name_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['name'] ?>">
-                        <span class="invalid-feedback"><?php echo data['name_err'] ?></span>
+                        <span class="invalid-feedback"><?php echo $data['name_err'] ?></span>
                     </div>
                     <div class="form-group">
                         <label for="email">Email: <sup>*</sup></label>
-                        <input type="text" name="email" class="form-control form-control-lg <?php echo !empty($data['email_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['email'] ?>">
-                        <span class="invalid-feedback"><?php echo data['email_err'] ?></span>
+                        <input type="email" name="email" class="form-control form-control-lg <?php echo !empty($data['email_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['email'] ?>">
+                        <span class="invalid-feedback"><?php echo $data['email_err'] ?></span>
                     </div>
                     <div class="form-group">
                         <label for="password">Password: <sup>*</sup></label>
-                        <input type="text" name="password" class="form-control form-control-lg <?php echo !empty($data['password_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['password'] ?>">
-                        <span class="invalid-feedback"><?php echo data['password_err'] ?></span>
+                        <input type="password" name="password" class="form-control form-control-lg <?php echo !empty($data['password_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['password'] ?>">
+                        <span class="invalid-feedback"><?php echo $data['password_err'] ?></span>
                     </div>
                     <div class="form-group">
                         <label for="confirm_password">Confirm Password: <sup>*</sup></label>
-                        <input type="text" name="confirm_password" class="form-control form-control-lg <?php echo !empty($data['confirm_password_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['confirm_password'] ?>">
-                        <span class="invalid-feedback"><?php echo data['confirm_password_err'] ?></span>
+                        <input type="password" name="confirm_password" class="form-control form-control-lg <?php echo !empty($data['confirm_password_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['confirm_password'] ?>">
+                        <span class="invalid-feedback"><?php echo $data['confirm_password_err'] ?></span>
                     </div>
                     <div class="row">
                         <div class="col">
@@ -352,16 +352,16 @@ public function login(){
             <div class="card card-body bg-light mt-5">
                 <h2>Login</h2>
                 <p>Please fill in your credentials to log in</p>
-                <form action="<?php echo URLROOT; ?>/users/register" method="POST">
+                <form action="<?php echo URLROOT; ?>/users/login" method="POST">
                     <div class="form-group">
                         <label for="email">Email: <sup>*</sup></label>
-                        <input type="text" name="email" class="form-control form-control-lg <?php echo !empty($data['email_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['email'] ?>">
-                        <span class="invalid-feedback"><?php echo data['email_err'] ?></span>
+                        <input type="email" name="email" class="form-control form-control-lg <?php echo !empty($data['email_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['email'] ?>">
+                        <span class="invalid-feedback"><?php echo $data['email_err'] ?></span>
                     </div>
                     <div class="form-group">
                         <label for="password">Password: <sup>*</sup></label>
-                        <input type="text" name="password" class="form-control form-control-lg <?php echo !empty($data['password_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['password'] ?>">
-                        <span class="invalid-feedback"><?php echo data['password_err'] ?></span>
+                        <input type="password" name="password" class="form-control form-control-lg <?php echo !empty($data['password_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['password'] ?>">
+                        <span class="invalid-feedback"><?php echo $data['password_err'] ?></span>
                     </div>
                     <div class="row">
                         <div class="col">
@@ -376,4 +376,131 @@ public function login(){
         </div>
     </div>
 <?php require APPROOT . '/views/inc/footer.php'; ?>
+```
+
+## Валидация формы
+
+Во время отправки и обработки данных нам нужно чтобы данные были заполненны, а поля с ошибками оставались пустыми. Мы проверяем что именно вводит пользователь и если это не соответствует нашим требованиям, то мы заполняем массив ошибками и затем выводим их в вид. Не забываем предварительно фильтровать данные.
+
+*app/controllers/Users.php*
+
+```php
+<?php
+
+class Users extends Controller{
+    public function __construct(){
+
+    }
+
+    public function index(){
+        echo 'User index';
+    }
+
+    public function register(){
+        // Check for POST
+        if($_SERVER['REQUEST_METHOD'] == 'POST'){
+            // Sanitize POST data
+            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            // Process the form
+            $data = [
+                'name' => trim($_POST['name']),
+                'email' => trim($_POST['email']),
+                'password' => trim($_POST['password']),
+                'confirm_password' => trim($_POST['confirm_password']),
+                'name_err' => '',
+                'email_err' => '',
+                'password_err' => '',
+                'confirm_password_err' => ''
+            ];
+            // Validate Name
+            if(empty($data['name'])){
+                $data['name_err'] = 'Please enter name';
+            }
+            // Validate Email
+            if(empty($data['email'])){
+                $data['email_err'] = 'Please enter email';
+            }
+            // Validate Password
+            if(empty($data['password'])){
+                $data['password_err'] = 'Please enter password';
+            }
+            else if(strlen($data['password']) < 6){
+                $data['password_err'] = 'Password must be at least 6 characters';
+            }
+            // Validate Confirm Password
+            if(empty($data['confirm_password'])){
+                $data['confirm_password_err'] = 'Please confirm password';
+            }
+            else if($data['password'] != $data['confirm_password']){
+                $data['confirm_password_err'] = 'Password do not match';
+            }
+            // Make sure errors are empty
+            if(empty($data['name_err']) && empty($data['email_err']) && empty($data['password_err']) && empty($data['confirm_password_err'])){
+                die('VALIDATED');
+            }
+            else{
+                // Load view with errors
+                $this->view('users/register', $data);
+            }
+        }
+        else{
+            // Load form
+            $data = [
+                'name' => '',
+                'email' => '',
+                'password' => '',
+                'confirm_password' => '',
+                'name_err' => '',
+                'email_err' => '',
+                'password_err' => '',
+                'confirm_password_err' => ''
+            ];
+            $this->view('users/register', $data);
+        }
+    }
+
+    public function login(){
+        // Check for POST
+        if($_SERVER['REQUEST_METHOD'] == 'POST'){
+            // Sanitize POST data
+            $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+            // Process the form
+            $data = [
+                'email' => trim($_POST['email']),
+                'password' => trim($_POST['password']),
+                'email_err' => '',
+                'password_err' => '',
+            ];
+            // Validate Email
+            if(empty($data['email'])){
+                $data['email_err'] = 'Please enter email';
+            }
+            // Validate Password
+            if(empty($data['password'])){
+                $data['password_err'] = 'Please enter password';
+            }
+            else if(strlen($data['password']) < 6){
+                $data['password_err'] = 'Password must be at least 6 characters';
+            }
+            // Make sure errors are empty
+            if(empty($data['email_err']) && empty($data['password_err'])){
+                die('VALIDATED');
+            }
+            else{
+                // Load view with errors
+                $this->view('users/login', $data);
+            }
+        }
+        else{
+            // Load form
+            $data = [
+                'email' => '',
+                'password' => '',
+                'email_err' => '',
+                'password_err' => '',
+            ];
+            $this->view('users/login', $data);
+        }
+    }
+}
 ```
