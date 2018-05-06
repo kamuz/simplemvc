@@ -10,7 +10,7 @@ CREATE TABLE `posts` (
   `user_id` int(11) DEFAULT NULL,
   `title` varchar(255) DEFAULT NULL,
   `body` text,
-  `create_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -19,7 +19,7 @@ CREATE TABLE `users` (
   `name` varchar(255) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
   `password` varchar(255) DEFAULT NULL,
-  `create_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
@@ -807,8 +807,15 @@ public function logout(){
     session_destroy();
     redirect('/users/login');
 }
+```
 
-public function isLoggedIn(){
+В хелпер сессий мы добавим новую функцию, которая будет просто проверять залогиненный ли пользователь, а именно существует ли сессионная переменная с ID пользователя:
+
+*app/helpers/session_helper.php*
+
+```php
+// Check User logined in
+function isLoggedIn(){
     if(isset($_SESSION['user_id'])){
         return true;
     }
@@ -818,13 +825,13 @@ public function isLoggedIn(){
 }
 ```
 
-Теперь нам нужно подкорректировать нашу навигацию, где мы проверим если существует сессионная переменная с ID пользователя, тогда выводим ссылку метод `logout()` нашего контроллера `Users`:
+Теперь нам нужно подкорректировать нашу навигацию, где мы проверим если, тогда выводим ссылку метод `logout()` нашего контроллера `Users`:
 
 *app/views/navbar.php*
 
 ```php
 <ul class="navbar-nav ml-auto">
-<?php if(isset($_SESSION['user_id'])): ?>
+<?php if(isLoggedIn()): ?>
     <li class="nav-item">
         <a class="nav-link" href="<?php echo URLROOT; ?>/users/logout">Logout</a>
     </li>
@@ -837,4 +844,147 @@ public function isLoggedIn(){
     </li>
 <?php endif; ?>
 </ul>
+```
+
+## Контроллер Posts
+
+Создадим новый контроллер и метод `index()`:
+
+*app/controllers/Posts.php*
+
+```php
+<?php
+
+class Posts extends Controller{
+    public function index(){
+        $data = [];
+
+        $this->view('posts/index');
+    }
+}
+```
+
+Создадим вид:
+
+*app/views/posts/index.php*
+
+```php
+<?php require APPROOT . '/views/inc/header.php'; ?>
+<div class="row">
+    <div class="col-md-6">
+        <h1>Posts</h1>
+    </div>
+    <div class="col-md-6">
+        <a href="<?php echo URLROOT ?>/posts/add" class="btn btn-primary pull-right"><i class="fa fa-pencil"></i>Add Post</a>
+    </div>
+</div>
+<?php require APPROOT . '/views/inc/footer.php'; ?>
+```
+
+## Контроль доступа
+
+В нашем случае доступ к постам будет только у залогиненных пользователей, поэтому:
+
+*app/controllers/Posts.php*
+
+```php
+<?php
+
+class Posts extends Controller{
+    public function __construct(){
+        if(!isLoggedIn()){
+            redirect('/users/login');
+        }
+    }
+    //..
+```
+
+## Модель Post
+
+В конструкторе подгружаем модель, затем через эту модель получаем все посты и передаём в вид:
+
+*app/controllers/Posts.php*
+
+```php
+<?php
+
+class Posts extends Controller{
+    public function __construct(){
+        if(!isLoggedIn()){
+            redirect('/users/login');
+        }
+
+        $this->postModel = $this->model('Post');
+    }
+
+    public function index(){
+
+        // Get posts
+        $posts = $this->postModel->getPosts();
+
+        $data = [
+            'posts' => $posts
+        ];
+
+        $this->view('posts/index', $data);
+    }
+}
+```
+
+Создаём модель и метод `getPosts()` в котором мы делаем запрос к БД:
+
+*app/models/Post.php*
+
+```php
+<?php
+
+class Post{
+    private $db;
+
+    public function __construct(){
+        $this->db = new Database;
+    }
+
+    public function getPosts(){
+        $this->db->query('
+            SELECT *,
+            posts.id as postId,
+            users.id as userId,
+            posts.created_at as postCreated,
+            users.created_at as userCreated
+            FROM posts
+            INNER JOIN users
+            ON posts.user_id = users.id
+            ORDER BY posts.created_at DESC
+        ');
+        return $this->db->resultSet();
+    }
+}
+```
+
+Мы соединяем таблицы `users` и `posts` с помощью `INNER JOIN` чтобы по ID пользователя выводить его имя. Нам нужно сформировать псевдонимы, чтобы возможно было вывести переменные в виде:
+
+*app/views/posts/index.php*
+
+```php
+<?php require APPROOT . '/views/inc/header.php'; ?>
+<div class="row">
+    <div class="col-md-6">
+        <h1>Posts</h1>
+    </div>
+    <div class="col-md-6">
+        <a href="<?php echo URLROOT ?>/posts/add" class="btn btn-primary pull-right"><i class="fa fa-pencil"></i> Add Post</a>
+    </div>
+    <div class="col-md-12">
+        <?php foreach($data['posts'] as $post): ?>
+            <div class="card card-body mb-3">
+                <h4 class="card-title"><?php echo $post->title ?></h4>
+                <div class="bg-light p-2 mb-3">Written by <?php echo $post->userCreated ?> on <?php echo $post->postCreated ?></div>
+                <p class="card-text"><?php echo $post->body ?></p>
+                <a href="<?php echo URLROOT ?>/posts/show/<?php echo $post->postId ?>" class="btn btn-dark">Read More</a>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php require APPROOT . '/views/inc/footer.php'; ?>
 ```
