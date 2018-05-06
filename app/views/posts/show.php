@@ -12,7 +12,7 @@
         <hr>
         <a href="<?php echo URLROOT ?>/posts/edit/<?php echo $data['post']->id ?>" class="btn btn-dark"><i class="fa fa-pencil"></i> Edit Post</a>
         <form action="<?php echo URLROOT ?>/posts/delete/<?php echo $data['post']->id ?>" method="POST" class="pull-right">
-            <button type="submit" class="btn btn-danger"><i class="fa fa-trash"></i> Delete</button>
+            <button type="submit" class="btn btn-danger" style="cursor: pointer"><i class="fa fa-trash"></i> Delete</button>
         </form>
     <?php endif; ?>
 <?php require APPROOT . '/views/inc/footer.php'; ?>

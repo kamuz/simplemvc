@@ -1304,3 +1304,66 @@ public function updatePost($data){
     </div>
 <?php require APPROOT . '/views/inc/footer.php'; ?>
 ```
+
+## Удаление поста
+
+Создадим метод `delete()`:
+
+*app/controllers/Posts.php*
+
+```php
+public function delete($id){
+    if($_SERVER['REQUEST_METHOD'] == 'POST'){
+        // Get existing post from model
+        $post = $this->postModel->getPostById($id);
+        // Check for owner
+        if($post->user_id != $_SESSION['user_id']){
+            redirect('/posts');
+        }
+        if($this->postModel->deletePost($id)){
+            flash('post_message', 'Post Removed');
+            redirect('/posts');
+        }
+        else{
+            die("Something wrong");
+        }
+    }
+    else{
+        redirect('/posts');
+    }
+}
+```
+
+Теперь метод удаления в модели:
+
+*app/models/Post.php*
+
+```php
+public function deletePost($id){
+    $this->db->query('DELETE FROM posts WHERE id = :id');
+    $this->db->bind(':id', $id);
+
+    if($this->db->execute()){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+```
+
+Чтобы при авторизации у нас было привествие можем вывести имя пользователя из сессионной переменной в меню:
+
+*app/views/inc/navbar.php*
+
+```php
+<ul class="navbar-nav ml-auto">
+<?php if(isLoggedIn()): ?>
+    <li class="nav-item"><a class="nav-link" href="/">Welcome, <?php echo $_SESSION['user_name'] ?></a></li>
+    <li class="nav-item"><a class="nav-link" href="<?php echo URLROOT; ?>/users/logout">Logout</a></li>
+<?php else: ?>
+    <li class="nav-item"><a class="nav-link" href="<?php echo URLROOT; ?>/users/register">Register</a></li>
+    <li class="nav-item"><a class="nav-link" href="<?php echo URLROOT; ?>/users/login">Login</a></li>
+<?php endif; ?>
+</ul>
+```
