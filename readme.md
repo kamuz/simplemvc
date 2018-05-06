@@ -1108,3 +1108,91 @@ public function addPost($data){
 <?php flash('post_message'); ?>
 //..
 ```
+
+## Отображение подробностей поста
+
+Для отображения деталей поста нам понадобится уже доступ к двум моделям, поэтому в конструкторе мы подгрузим модель `User`.
+
+```php
+class Posts extends Controller{
+    public function __construct(){
+        if(!isLoggedIn()){
+            redirect('/users/login');
+        }
+
+        $this->postModel = $this->model('Post');
+        $this->userModel = $this->model('User');
+    }
+
+    //..
+
+    public function show($id){
+        $post = $this->postModel->getPostById($id);
+        $user = $this->userModel->getUserById($post->user_id);
+
+        $data = [
+            'post' => $post,
+            'user' => $user
+        ];
+
+        $this->view('posts/show', $data);
+    }
+}
+```
+
+Для получения деталей поста мы будем использовать метод `getPostById()` модели `Post`, для получения деталей о пользователей метод `getUserById()` модели `User`.
+
+*app/models/Post.php*
+
+```php
+<?php
+
+class Post{
+    //..
+    public function getPostById($id){
+        $this->db->query('SELECT * FROM posts WHERE id = :id');
+        $this->db->bind(':id', $id);
+
+        return $this->db->single();
+    }
+```
+
+*app/models/User.php*
+
+```php
+<?php
+
+class User{
+    //..
+    public function getUserById($id){
+        $this->db->query('SELECT * FROM users WHERE id = :id');
+        $this->db->bind(':id', $id);
+
+        return $this->db->single();
+    }
+```
+
+В виде выводим данные, при этом добавим кнопки редактирования и удаления поста, которые будут отображаться только тогда, когда ID текущего пользователя будет таким же как и ID поста.
+
+*app/views/posts/show.php*
+
+```php
+<?php require APPROOT . '/views/inc/header.php'; ?>
+    <a href="<?php echo URLROOT ?>/posts" class="btn btn-light"><i class="fa fa-backward"></i> Back</a>
+    <hr>
+    <h1><?php echo $data['post']->title ?></h1>
+    <div class="bg-light p-2 mb-3">
+        Written by <?php echo $data['user']->name ?> on <?php echo $data['post']->created_at ?>
+    </div>
+    <div>
+        <?php echo $data['post']->body ?>
+    </div>
+    <?php if($data['post']->user_id == $_SESSION['user_id']): ?>
+        <hr>
+        <a href="<?php echo URLROOT ?>/posts/edit/<?php echo $data['post']->id ?>" class="btn btn-dark"><i class="fa fa-pencil"></i> Edit Post</a>
+        <form action="<?php echo URLROOT ?>/posts/delete/<?php echo $data['post']->id ?>" method="POST" class="pull-right">
+            <button type="submit" class="btn btn-danger"><i class="fa fa-trash"></i> Delete</button>
+        </form>
+    <?php endif; ?>
+<?php require APPROOT . '/views/inc/footer.php'; ?>
+```
