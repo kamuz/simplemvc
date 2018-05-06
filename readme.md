@@ -571,7 +571,7 @@ else if($this->userModel->findUserByEmail($data['email'])){
     // Validated
 
     // Hash Password
-    $data['password'] = password_hash($data['passworld'], PASSWORD_DEFAULT);
+    $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
 
     // Register users
     if($this->userModel->register($data)){
@@ -702,4 +702,139 @@ if($this->userModel->register($data)){
     <?php flash('register_success') ?>
     <h2>Login</h2>
     <p>Please fill in your credentials to log in</p>
+```
+
+## Авторизация пользователя
+
+В начале проверим существует ли наш пользователь в БД, иначе создадим сообщение для ошибки валидации email.
+
+*app/controllers/Users.php*
+
+```php
+public function login(){
+    // Check for POST
+    if($_SERVER['REQUEST_METHOD'] == 'POST'){
+        //..
+        // Validate Email
+        if(empty($data['email'])){
+            $data['email_err'] = 'Please enter email';
+        }
+        if($this->userModel->findUserByEmail($data['email'])){
+            // User found
+        }
+        else{
+            // User not found
+            $data['email_err'] = 'No user found';
+        }
+```
+
+Далее мы вызываем метод `login()`, которому мы передаём логин и пароль из формы и если логин и пароль соответствуют тем, которые имеются в БД, то мы пока что завершаем выполнение скрипта и выводим сообщени, в противном случае передаём в вид ошибку валидации о том что введённый пароль не корректный:
+
+*app/controllers/Users.php*
+
+```php
+// Make sure errors are empty
+if(empty($data['email_err']) && empty($data['password_err'])){
+    // Validated
+    // Check and set logged in user
+    $loggedInUser = $this->userModel->login($data['email'], $data['password']);
+    if($loggedInUser){
+        // Create Session
+        die("LOGIN IN");
+    }
+    else{
+        $data['password_err'] = 'Password incorrect';
+        $this->view('users/login', $data);
+    }
+}
+```
+
+В модели соaдаём метод `login()` в котором мы получаем email польbователя, который соотвествует введённому в форму и с помощью функции `password_verify()` проверяем соответствует ли cахешированный пароль с тем, который мы ввели череd форму:
+
+*app/models/User.php*
+
+```php
+// Login user
+public function login($email, $password){
+    $this->db->query('SELECT * FROM users WHERE email = :email');
+    $this->db->bind(':email', $email);
+
+    $row = $this->db->single();
+    $hashed_password = $row->password;
+
+    if(password_verify($password, $hashed_password)){
+        return $row;
+    }
+    else{
+        return false;
+    }
+}
+```
+
+## Записываем данные о пользователе в сессию
+
+Пока что мы просто выводили сообщение, если в БД нашли совпадение email и паролю, введённому в форму авторизации. Теперь нам нужно записать эти данные в сессию и для этого мы напишем и вызовем метод `createUserSession()` на вход которой передадим данные о залогиненном пользователе, которые мы получили из БД. В методе `logout()` мы удаляем сессионные переменные и завершаем сессию. Метод `isLoggedIn()` нужен для того чтобы проверяеть залогиненный ли пользователь, что нам приходится в будущем, когда мы будет реализовововать уровни доступа:
+
+*app/controllers/Users.php*
+
+```php
+$loggedInUser = $this->userModel->login($data['email'], $data['password']);
+if($loggedInUser){
+    // Create Session
+    $this->createUserSession($loggedInUser);
+}
+
+//..
+
+public function createUserSession($user){
+    $_SESSION['user_id'] = $user->id;
+    $_SESSION['user_email'] = $user->email;
+    $_SESSION['user_name'] = $user->name;
+    // debug($_SESSION);
+}
+
+public function createUserSession($user){
+    $_SESSION['user_id'] = $user->id;
+    $_SESSION['user_email'] = $user->email;
+    $_SESSION['user_name'] = $user->name;
+    redirect('/posts/index');
+}
+
+public function logout(){
+    unset($_SESSION['user_id']);
+    unset($_SESSION['user_email']);
+    unset($_SESSION['user_name']);
+    session_destroy();
+    redirect('/users/login');
+}
+
+public function isLoggedIn(){
+    if(isset($_SESSION['user_id'])){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+```
+
+Теперь нам нужно подкорректировать нашу навигацию, где мы проверим если существует сессионная переменная с ID пользователя, тогда выводим ссылку метод `logout()` нашего контроллера `Users`:
+
+*app/views/navbar.php*
+
+```php
+<ul class="navbar-nav ml-auto">
+<?php if(isset($_SESSION['user_id'])): ?>
+    <li class="nav-item">
+        <a class="nav-link" href="<?php echo URLROOT; ?>/users/logout">Logout</a>
+    </li>
+<?php else: ?>
+    <li class="nav-item">
+        <a class="nav-link" href="<?php echo URLROOT; ?>/users/register">Register</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="<?php echo URLROOT; ?>/users/login">Login</a>
+    </li>
+<?php endif; ?>
+</ul>
 ```
