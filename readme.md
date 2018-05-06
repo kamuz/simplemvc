@@ -951,7 +951,7 @@ class Post{
             posts.id as postId,
             users.id as userId,
             posts.created_at as postCreated,
-            users.created_at as userCreated
+            users.name as userCreated
             FROM posts
             INNER JOIN users
             ON posts.user_id = users.id
@@ -987,4 +987,124 @@ class Post{
     </div>
 </div>
 <?php require APPROOT . '/views/inc/footer.php'; ?>
+```
+
+## Добавление нового поста
+
+Мы хотим чтобы залогиненные пользователи не видели страницу приветcвия (как в Facebook), а вместо этого список постов:
+
+*app/controllers/Pages.php*
+
+```php
+public function index(){
+    if(isLoggedIn()){
+        redirect('/posts');
+    }
+    //..
+```
+
+Опишем метод `add()`:
+
+```php
+public function add(){
+    if($_SERVER['REQUEST_METHOD'] == 'POST'){
+        // Sanitize POST array
+        $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+
+        $data = [
+            'title' => trim($_POST['title']),
+            'body' => trim($_POST['body']),
+            'user_id' => $_SESSION['user_id'],
+            'title_err' => '',
+            'body_err' => ''
+        ];
+
+        // Validate title
+        if(empty($data['title'])){
+            $data['title_err'] = 'Please enter title';
+        }
+        if(empty($data['body'])){
+            $data['body_err'] = 'Please enter body text';
+        }
+
+        // Make sure no errors
+        if(empty($data['title_err']) && empty($data['body_err'])){
+            if($this->postModel->addPost($data)){
+                flash('post_message', 'Post Added');
+                redirect('/posts');
+            }
+            else{
+                die("Something wrong");
+            }
+        }
+        else{
+            // Load view with errors
+            $this->view('posts/add', $data);
+        }
+    }
+    else{
+        $data = [
+            'title' => '',
+            'body' => ''
+        ];
+
+        $this->view('posts/add', $data);
+    }
+}
+```
+
+Если POST данных нет, тогда просто подгружаем вид с пустыми данными. Если же данные отправленны, тогда мы получаем данные с формы, если при этом отправляются пустые данные, мы делаем проверку и создаём сообщения об ошибках валидации. Если же ошибок валидации нет, тогда мы сохраняем данные с помощью метода модели `addPost()`, создаём флеш-сообщение и делаем редирект на страницу с постами.
+
+*app/views/posts/add.php*
+
+```php
+<?php require APPROOT . '/views/inc/header.php'; ?>
+    <a href="<?php echo URLROOT ?>/posts" class="btn btn-light"><i class="fa fa-backward"></i> Back</a>
+    <div class="card card-body bg-light mt-5">
+        <h2>Add Post</h2>
+        <form action="<?php echo URLROOT; ?>/posts/add" method="POST">
+            <div class="form-group">
+                <label for="title">Title: <sup>*</sup></label>
+                <input type="text" name="title" class="form-control form-control-lg <?php echo !empty($data['title_err']) ? 'is-invalid' : ''; ?>" value="<?php echo $data['title'] ?>">
+                <span class="invalid-feedback"><?php echo $data['title_err'] ?></span>
+            </div>
+            <div class="form-group">
+                <label for="body">Body: <sup>*</sup></label>
+                <textarea name="body" class="form-control form-control-lg <?php echo !empty($data['body_err']) ? 'is-invalid' : ''; ?>"><?php echo $data['body'] ?></textarea>
+                <span class="invalid-feedback"><?php echo $data['body_err'] ?></span>
+            </div>
+            <input type="submit" class="btn btn-success" value="Submit">
+        </form>
+    </div>
+<?php require APPROOT . '/views/inc/footer.php'; ?>
+```
+
+Метод `addPost()` очень похож на метод регистрации нового пользователя:
+
+*app/models/Post.php*
+
+```php
+public function addPost($data){
+    $this->db->query('INSERT INTO posts (title, body, user_id) VALUES(:title, :body, :user_id)');
+    $this->db->bind(':title', $data['title']);
+    $this->db->bind(':body', $data['body']);
+    $this->db->bind(':user_id', $data['user_id']);
+
+    if($this->db->execute()){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+```
+
+В вид выводим флеш сообщение:
+
+*app/views/posts/index.php*
+
+```php
+<?php require APPROOT . '/views/inc/header.php'; ?>
+<?php flash('post_message'); ?>
+//..
 ```

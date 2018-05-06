@@ -5,6 +5,10 @@ class Pages extends Controller{
     }
 
     public function index(){
+        if(isLoggedIn()){
+            redirect('/posts');
+        }
+
         $data = [
             'title' => 'Simple MVC',
             'description' => 'Simple social network built on the Custom PHP framework'
