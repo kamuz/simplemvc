@@ -21,3 +21,13 @@ function flash($name='', $message='', $class='alert alert-success'){
         }
     }
 }
+
+// Check User logined in
+function isLoggedIn(){
+    if(isset($_SESSION['user_id'])){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
