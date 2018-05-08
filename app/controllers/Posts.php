@@ -7,7 +7,6 @@ class Posts extends Controller{
     }
 
     public function index(){
-
         // Get posts
         $posts = $this->postModel->getPosts();
 
@@ -19,6 +18,9 @@ class Posts extends Controller{
     }
 
     public function add(){
+        if(!isLoggedIn()){
+            redirect('/users/login');
+        }
         if($_SERVER['REQUEST_METHOD'] == 'POST'){
             // Sanitize POST array
             $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
@@ -65,6 +67,9 @@ class Posts extends Controller{
     }
 
     public function edit($id){
+        if(!isLoggedIn()){
+            redirect('/users/login');
+        }
         if($_SERVER['REQUEST_METHOD'] == 'POST'){
             // Sanitize POST array
             $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
