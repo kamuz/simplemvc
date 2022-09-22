@@ -5,9 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="stylesheet" href="<?php echo URLROOT ?>/css/bootstrap.min.css" rel="stylesheet">
-    <link href="<?php echo URLROOT ?>/css/font-awesome.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="<?php echo URLROOT ?>/css/style.css">
+    <link href="<?php echo URLROOT ?>/public/css/bootstrap.min.css" rel="stylesheet">
+    <link href="<?php echo URLROOT ?>/public/css/font-awesome.min.css" rel="stylesheet">
+    <link href="<?php echo URLROOT ?>/public/css/style.css" rel="stylesheet">
+    <link rel="icon" href="<?php echo URLROOT ?>/public/favicon.png" sizes="16x16" type="image/png">
     <title>
         <?php echo SITENAME; ?>
     </title>
