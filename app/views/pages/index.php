@@ -1,8 +1,8 @@
 <?php require APPROOT . '/views/inc/header.php'; ?>
-    <div class="jumbotron jumbotron-flud text-center">
+    <div class="jumbotron jumbotron-flud text-center" style="margin-top: 30px">
         <div class="container">
-        <h1><?php echo $data['title']; ?></h1>
-        <p><?php echo $data['description']; ?></p>
+            <h1><?php echo $data['title']; ?></h1>
+            <p><?php echo $data['description']; ?></p>
         </div>
-    </div> 
+    </div>
 <?php require APPROOT . '/views/inc/footer.php'; ?>
